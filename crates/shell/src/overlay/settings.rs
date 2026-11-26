@@ -164,10 +164,10 @@ impl Render for OverlaySettings {
             .collect();
         let prefs = self.settings.read(cx).prefs();
         // On until DON'T SHOW AGAIN was pressed in the question itself.
-        let (asked, in_game) = (!prefs.skip_exclusive_warning, prefs.overlay_in_game);
+        let (asked, in_game) = (!prefs.skip_exclusive_warning, prefs.overlay_in_game());
         let mode = |id: &'static str, label: Message, choose: bool| {
             choice(id, t(cx, label), in_game == choose, cx).on_click(cx.listener(move |view, _, _, cx| {
-                view.settings.update(cx, |settings, cx| settings.edit(|prefs| prefs.overlay_in_game = choose, cx));
+                view.settings.update(cx, |settings, cx| settings.edit(|prefs| prefs.set_overlay_in_game(choose), cx));
             }))
         };
         v_flex()

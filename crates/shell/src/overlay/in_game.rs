@@ -82,7 +82,7 @@ impl InGame {
         })
         .detach();
         let (runs, settings, trainers) = (runs.clone(), settings.clone(), trainers.clone());
-        let wanted = settings.read(cx).prefs().overlay_in_game;
+        let wanted = settings.read(cx).prefs().overlay_in_game();
         let reader = None;
         Self {
             registry,
@@ -102,7 +102,7 @@ impl InGame {
 
     fn wants(&self, cx: &App) -> bool {
         let own = self.runs.read(cx).live().and_then(|game| self.trainers.read(cx).game_profile(game).overlay_in_game);
-        own.unwrap_or(self.settings.read(cx).prefs().overlay_in_game)
+        own.unwrap_or(self.settings.read(cx).prefs().overlay_in_game())
     }
 
     fn rewant(&mut self, cx: &mut Context<Self>) {

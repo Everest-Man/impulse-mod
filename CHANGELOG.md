@@ -3,6 +3,16 @@
 This file is the source of truth for release notes: the release workflow publishes the newest section and the app shows it.
 The newest entry must match the version in `Cargo.toml`. A `-pre` build reads the section of its version.
 
+## [0.6.1] - 2026-11-26
+
+### Features
+
+- A new install draws the overlay IN-GAME (Settings, OVERLAY, MODE), inside the game's picture where the game allows it, else over the game. An install that already has settings keeps its mode.
+
+### Fixes
+
+- A map pin's picture or clip shows the pin's icon in its category's color while it loads, or when it cannot load, instead of a black box. The lightbox shows the small picture at once while the full size loads.
+
 ## [0.6.0] - 2026-11-25
 
 ### Features
