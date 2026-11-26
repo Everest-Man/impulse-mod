@@ -43,6 +43,9 @@ pub struct Saved {
 pub struct Mark {
     /// A plane point.
     pub at: (f64, f64),
+    /// The game position of the player it was put at; `None`: a point on the map, of no height.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<[f64; 3]>,
     pub name: String,
     #[serde(default)]
     pub note: String,
@@ -143,7 +146,7 @@ mod tests {
     #[test]
     fn state_survives_a_round_trip_and_older_files() {
         let dir = std::env::temp_dir().join(format!("impulse-map-state-{}", std::process::id()));
-        let mark = Mark { at: (0.5, 0.5), name: "Camp".to_owned(), note: String::new(), color: 0xFF0000 };
+        let mark = Mark { at: (0.5, 0.5), position: Some([1., 2., 3.]), name: "Camp".to_owned(), note: String::new(), color: 0xFF0000 };
         let saved = Saved {
             found: HashSet::from_iter(["p1".to_owned()]),
             clusters: false,
@@ -157,12 +160,14 @@ mod tests {
         assert!(load(&dir, &map("../ab")).is_none());
         let back = load(&dir, &map("../aB")).unwrap();
         assert_eq!((back.found, back.clusters, back.view, back.labels), (saved.found, false, saved.view, true));
-        assert_eq!((back.marks[0].name.as_str(), back.marks[0].color), ("Camp", 0xFF0000));
+        assert_eq!((back.marks[0].name.as_str(), back.marks[0].color, back.marks[0].position), ("Camp", 0xFF0000, Some([1., 2., 3.])));
         assert_eq!(back.tile_set.as_deref(), Some("drawn"));
         fs::create_dir_all(dir.join("s").join("v1")).unwrap();
         fs::write(dir.join("s").join("v1").join("OldMap.json"), br#"{"found":["x"]}"#).unwrap();
         let old = load(&dir, &map("OldMap")).unwrap();
-        assert!(old.found.contains("x") && old.clusters && old.regions && old.marks_shown && old.tile_set.is_none());
+        assert!(
+            old.found.contains("x") && old.clusters && old.regions && old.marks_shown && old.tile_set.is_none() && old.marks.is_empty()
+        );
         // v1 kept letters and digits only: the file may be another map's.
         assert!(load(&dir, &map("Old-Map")).is_none());
         store(&dir, &map("OldMap"), &Saved::default());

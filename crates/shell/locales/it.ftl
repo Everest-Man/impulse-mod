@@ -249,6 +249,7 @@ map-hide-all = NASCONDI TUTTO
 map-teleport = TELETRASPORTO
 map-filter-teleport = CON TP
 map-teleport-here = TELETRASPORTA QUI
+map-teleport-height = ALTEZZA DEL TELETRASPORTO
 map-confirm = CONFERMA
 map-delete = ELIMINA
 map-add-pin = AGGIUNGI PIN

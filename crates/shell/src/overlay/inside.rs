@@ -104,6 +104,10 @@ pub(super) async fn leave(
             layers.block(false);
         }
         layer.turn(Mode::Window { armed: None }, window, cx);
+        // The game keeps the focus unless the window was asked for: the HUD's minimap is due as the layer goes.
+        if away.is_some() {
+            layer.seen(Some(game), cx);
+        }
     })?;
     // A capture or a question made inside ends here, as with any window going inactive.
     cx.update(|window, cx| window.hold_active(false, cx))?;

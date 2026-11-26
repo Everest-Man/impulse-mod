@@ -265,6 +265,7 @@ map-hide-all = СХОВАТИ ВСЕ
 map-teleport = ТЕЛЕПОРТ
 map-filter-teleport = ТЕЛЕПОРТ
 map-teleport-here = ТЕЛЕПОРТ СЮДИ
+map-teleport-height = ВИСОТА ТЕЛЕПОРТУ
 map-confirm = ПІДТВЕРДИТИ
 map-delete = ВИДАЛИТИ
 map-add-pin = ДОДАТИ МІТКУ

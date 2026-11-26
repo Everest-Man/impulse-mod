@@ -15,7 +15,7 @@ use model::Map;
 
 use super::Card;
 use crate::{
-    map::board::{Board, plane},
+    map::board::Board,
     ui::{
         assets::Icon,
         key,
@@ -70,7 +70,7 @@ impl Card {
     pub(super) fn mark_card(&self, map: &Map, board: &Board, cx: &Context<Self>) -> Option<AnyElement> {
         let index = board.mark?;
         let mark = board.saved.marks.get(index)?;
-        let (at, color) = (mark.at, mark.color);
+        let color = mark.color;
         let field = || div().px(px(8.)).py(px(4.)).border_1().border_color(line(0.14)).bg(rgb(SUNKEN)).text_size(px(TYPE_BODY));
         let swatches = PALETTE.iter().enumerate().map(|(slot, &swatch)| {
             div()
@@ -87,11 +87,11 @@ impl Card {
                     })
                 }))
         });
-        let teleport = board.can_teleport_to_plane(map).then(|| {
+        let teleport = board.can_teleport_to_mark(map, index).then(|| {
             button(&t(cx, key::MAP_TELEPORT))
                 .id("mark-teleport")
                 .flex_1()
-                .on_click(cx.listener(move |card, _, _, cx| card.board.update(cx, |board, cx| board.teleport_to_plane(plane(at), cx))))
+                .on_click(cx.listener(move |card, _, _, cx| card.board.update(cx, |board, cx| board.teleport_to_mark(index, cx))))
         });
         let delete = button(&t(cx, key::MAP_DELETE))
             .id("mark-delete")
@@ -109,6 +109,7 @@ impl Card {
             .panel("mark-card")
             .p(px(14.))
             .child(head)
+            .children(mark.position.map(|position| self.coordinates(position, cx)))
             .child(field().font_weight(FontWeight::BOLD).child(Input::new(&self.mark_name).appearance(false).px_0()))
             .child(field().child(Textarea::new(&self.mark_note).appearance(false)))
             .child(h_flex().gap(px(8.)).children(swatches))

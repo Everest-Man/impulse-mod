@@ -252,6 +252,7 @@ map-hide-all = ALLE AUSBLENDEN
 map-teleport = TELEPORT
 map-filter-teleport = TELEPORT
 map-teleport-here = TELEPORT HIERHER
+map-teleport-height = TELEPORT-HÖHE
 map-confirm = BESTÄTIGEN
 map-delete = LÖSCHEN
 map-add-pin = NEUER MARKER

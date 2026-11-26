@@ -3,6 +3,20 @@
 This file is the source of truth for release notes: the release workflow publishes the newest section and the app shows it.
 The newest entry must match the version in `Cargo.toml`. A `-pre` build reads the section of its version.
 
+## [0.6.1] - 2026-11-26
+
+### Features
+
+- A new install draws the overlay IN-GAME (Settings, OVERLAY, MODE), inside the game's picture where the game allows it, else over the game. An install that already has settings keeps its mode.
+- A pin's picture shows its mark on its category's color until it loads, or when it cannot.
+- TELEPORT HEIGHT in the map's sidebar raises the game's teleports to the map's pins and points by the value you set, in the game's units: for a game that drops you through the ground after a teleport (Gothic Remake). 0 is the height the map gives.
+- The pin button under the map's follow button puts one of your pins where you stand, when the trainer tells your height. Its card shows the coordinates to copy, as a map pin's does, and TELEPORT on it brings you back to that exact spot, without TELEPORT HEIGHT.
+
+### Fixes
+
+- The HUD's minimap no longer blinks when the overlay closes: it comes up as the overlay goes, with its map, instead of after it, empty.
+- A map pin's picture or clip shows the pin's icon in its category's color while it loads, or when it cannot load, instead of a black box. The lightbox shows the small picture at once while the full size loads.
+
 ## [0.6.0] - 2026-11-25
 
 ### Features

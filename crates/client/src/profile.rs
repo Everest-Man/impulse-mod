@@ -1,7 +1,10 @@
 //! `games.json`: what the user keeps about a game, the star and the play time, and about its trainer, the mods a
 //! run starts with, their collections, the pins and the folded sections.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    sync::LazyLock,
+};
 
 use model::Ref;
 use serde::{Deserialize, Serialize};
@@ -44,6 +47,9 @@ pub struct GameProfile {
     /// The overlay drawn inside this game (IN-GAME) or not (OVER THE GAME); `None`: the app's choice.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub overlay_in_game: Option<bool>,
+    /// Game units added to the height of a map's teleports (TELEPORT HEIGHT); `None` is 0.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub teleport_lift: Option<f64>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -69,7 +75,7 @@ impl TrainerProfile {
     }
 }
 
-static BLANK_GAME: GameProfile = GameProfile { favorite: false, sessions: 0, played: 0, last: 0, overlay_in_game: None };
+static BLANK_GAME: LazyLock<GameProfile> = LazyLock::new(GameProfile::default);
 
 static BLANK_TRAINER: TrainerProfile = TrainerProfile {
     save_mods: false,

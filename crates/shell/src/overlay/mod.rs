@@ -375,6 +375,10 @@ async fn leave(layer: &WeakEntity<Layer>, hwnd: isize, below: isize, armed: Opti
     layer.update_in(cx, |layer, window, cx| {
         layer.exclusive = false;
         layer.turn(Mode::Window { armed }, window, cx);
+        // The HUD's minimap is due as the window goes: told after the reveal, it would show a gap.
+        if armed.is_none() {
+            layer.seen(Some(below), cx);
+        }
     })?;
     fullscreen(false, cx).await?;
     if armed.is_none() {

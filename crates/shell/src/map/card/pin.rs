@@ -1,7 +1,7 @@
 //! The selected pin's card: its picture or clip, what it is, where, and the pins near it.
 
 use gpui_kit::{
-    AnyElement, ClipboardItem, Context, FontWeight, Window,
+    AnyElement, ClipboardItem, Context, Div, FontWeight, Stateful, Window,
     component::{h_flex, text::TextView, v_flex},
     div, img,
     prelude::*,
@@ -18,7 +18,7 @@ use crate::{
         board::Board,
         group, kind,
         markers::{ink, legible},
-        picture::{fill, picture},
+        picture::{fill, picture, stand_in},
     },
     ui::{
         assets::Icon,
@@ -48,6 +48,31 @@ pub(super) fn nearest(board: &Board) -> Vec<usize> {
 }
 
 impl Card {
+    /// A game position, copied on a click; the map's pins and the user's pins of the player's position show it.
+    pub(super) fn coordinates(&self, [x, y, z]: [f64; 3], cx: &Context<Self>) -> Stateful<Div> {
+        let text = format!("{} {x:.0}  {} {y:.0}  {} {z:.0}", t(cx, key::MAP_AXIS_X), t(cx, key::MAP_AXIS_Y), t(cx, key::MAP_AXIS_Z));
+        let copy = text.clone();
+        let copied = if self.copied { rgb(accent(cx)) } else { rgb(DIM) };
+        h_flex()
+            .id("coordinates")
+            .px(px(8.))
+            .py(px(4.))
+            .gap(px(8.))
+            .cursor_pointer()
+            .border_1()
+            .border_color(line(0.14))
+            .bg(rgb(SUNKEN))
+            .hover(|style| style.border_color(line(0.3)))
+            .child(mono(text, TYPE_CAPTION).flex_1().text_color(rgb(MUTED)))
+            .child(mono(t(cx, if self.copied { key::MAP_COPIED } else { key::MAP_COPY }), TYPE_TAG).text_color(copied))
+            .on_click(cx.listener(move |card, _, _, cx| {
+                cx.write_to_clipboard(ClipboardItem::new_string(copy.clone()));
+                card.copied = true;
+                card._flash = flash(cx, |card| card.copied = false);
+                cx.notify();
+            }))
+    }
+
     pub(super) fn pin_card(&mut self, map: &Map, board: &Board, window: &Window, cx: &Context<Self>) -> Option<AnyElement> {
         let index = board.selected?;
         let pin = &map.pins[index];
@@ -67,6 +92,7 @@ impl Card {
         let clip = self.clip.as_ref().filter(|_| !self.lightbox).map(|clip| clip.view.clone().into_any_element());
         let preview = pin.image.as_ref().map(|image| fill(img(image.preview.clone()), ("pin-media", index)));
         let shown = (pin.image.is_some() || pin.video.is_some()).then(|| {
+            let under = stand_in(pin.group, map, board, &mut self.images, window, cx);
             div()
                 .id("pin-picture")
                 .relative()
@@ -74,7 +100,7 @@ impl Card {
                 .flex_none()
                 .cursor_pointer()
                 .bg(rgb(SUNKEN))
-                .child(picture(index, preview.into_iter().chain(clip), (CARD_WIDTH - 2., PICTURE)))
+                .child(picture(index, under, preview.into_iter().chain(clip), (CARD_WIDTH - 2., PICTURE)))
                 .on_click(cx.listener(|card, _, _, cx| {
                     (card.lightbox, card.photo) = (true, false);
                     cx.notify();
@@ -94,33 +120,7 @@ impl Card {
             Some(_) => head.mt(px(-BADGE / 2.)),
             None => head.pt(px(14.)).pr(px(36.)),
         };
-        let coordinates = pin.position.map(|[x, y, z]| {
-            let text = format!("{} {x:.0}  {} {y:.0}  {} {z:.0}", t(cx, key::MAP_AXIS_X), t(cx, key::MAP_AXIS_Y), t(cx, key::MAP_AXIS_Z));
-            let copy = text.clone();
-            h_flex()
-                .id("pin-coordinates")
-                .mx(px(14.))
-                .px(px(8.))
-                .py(px(4.))
-                .gap(px(8.))
-                .cursor_pointer()
-                .border_1()
-                .border_color(line(0.14))
-                .bg(rgb(SUNKEN))
-                .hover(|style| style.border_color(line(0.3)))
-                .child(mono(text, TYPE_CAPTION).flex_1().text_color(rgb(MUTED)))
-                .child(mono(t(cx, if self.copied { key::MAP_COPIED } else { key::MAP_COPY }), TYPE_TAG).text_color(if self.copied {
-                    accent
-                } else {
-                    rgb(DIM)
-                }))
-                .on_click(cx.listener(move |card, _, _, cx| {
-                    cx.write_to_clipboard(ClipboardItem::new_string(copy.clone()));
-                    card.copied = true;
-                    card._flash = flash(cx, |card| card.copied = false);
-                    cx.notify();
-                }))
-        });
+        let coordinates = pin.position.map(|position| self.coordinates(position, cx).mx(px(14.)));
         let mark = button(&t(cx, if found { key::MAP_FOUND } else { key::MAP_MARK_FOUND }))
             .id("pin-found")
             .flex_1()

@@ -116,8 +116,10 @@ pub struct Prefs {
     pub skip_exclusive_warning: bool,
     /// LAUNCH no longer asks about a build newer than the trainer's.
     pub skip_unconfirmed_warning: bool,
-    /// IN-GAME: the HUD draws inside the game's frame where its source can. Off, the default: over the game.
-    pub overlay_in_game: bool,
+    /// IN-GAME: the HUD draws inside the game's frame where its source can, else over the game. `None` until chosen:
+    /// IN-GAME, a new install's default; a mode saved before stays.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    overlay_in_game: Option<bool>,
     /// On, Impulse does not look for a new version by itself; CHECK NOW still does.
     pub no_update_check: bool,
     pub update_channel: updater::Channel,
@@ -133,6 +135,14 @@ impl Prefs {
 
     pub fn set_accent(&mut self, color: u32) {
         self.accent = ACCENTS.iter().find(|(_, other, _)| *other == color).map_or_else(String::new, |(name, ..)| (*name).to_owned());
+    }
+
+    pub fn overlay_in_game(&self) -> bool {
+        self.overlay_in_game.unwrap_or(true)
+    }
+
+    pub fn set_overlay_in_game(&mut self, on: bool) {
+        self.overlay_in_game = Some(on);
     }
 
     /// The language the user picked, if it ships.
@@ -223,6 +233,16 @@ mod tests {
         prefs.cues.set_file(Cue::Slider, None);
         prefs.cues.set(Cue::Slider, false);
         assert_eq!(serde_json::to_string(&prefs.cues).unwrap(), r#"{"on":[],"files":{}}"#);
+    }
+
+    #[test]
+    fn a_new_install_draws_the_overlay_in_the_game_and_a_saved_mode_stays() {
+        assert!(Prefs::default().overlay_in_game());
+        assert!(!serde_json::to_string(&Prefs::default()).unwrap().contains("overlay_in_game"));
+        let mut over: Prefs = serde_json::from_str(r#"{"overlay_in_game":false}"#).unwrap();
+        assert!(!over.overlay_in_game());
+        over.set_overlay_in_game(true);
+        assert!(serde_json::to_string(&over).unwrap().contains(r#""overlay_in_game":true"#));
     }
 
     #[test]

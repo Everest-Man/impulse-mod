@@ -261,6 +261,7 @@ map-hide-all = OCULTAR TODO
 map-teleport = TELETRANSPORTAR
 map-filter-teleport = TELETRANSPORTE
 map-teleport-here = TELETRANSPORTAR AQUÍ
+map-teleport-height = ALTURA DEL TELETRANSPORTE
 map-confirm = CONFIRMAR
 map-delete = ELIMINAR
 map-add-pin = AÑADIR MARCADOR

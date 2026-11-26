@@ -303,6 +303,19 @@ pub fn relabel<V: 'static, M: InputModeKind>(
     })
 }
 
+/// A short typed number: a sunken box of `width` around `state`, centered in the mono face.
+pub fn number_field(state: &Entity<InputState>, width: f32, disabled: bool) -> Div {
+    mono("", TYPE_FIELD)
+        .w(px(width))
+        .h(px(26.))
+        .flex()
+        .items_center()
+        .border_1()
+        .border_color(line(0.14))
+        .bg(rgb(SUNKEN))
+        .child(Input::new(state).appearance(false).disabled(disabled).px(px(8.)).text_center().font_family(MONO).text_size(px(TYPE_FIELD)))
+}
+
 pub fn filter(state: &Entity<InputState>, cx: &App) -> Div {
     h_flex()
         .gap(px(8.))

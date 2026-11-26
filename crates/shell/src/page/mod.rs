@@ -122,7 +122,7 @@ impl Page {
         crash::watch(&runs, cx);
         let log = cx.new(|cx| LogView::new(window, cx));
         cx.subscribe(&log, |_, _, _: &LogEvent, cx| cx.notify()).detach();
-        let maps = cx.new(|cx| Maps::new(registry.clone(), &paths, library.clone(), runs.clone(), &sources, cx));
+        let maps = cx.new(|cx| Maps::new(registry.clone(), &paths, library.clone(), runs.clone(), trainers.clone(), &sources, cx));
         // The map panel reads the open game's offers and the titles to link.
         cx.observe(&maps, |_, _, cx| cx.notify()).detach();
         let map = cx.new(|cx| MapView::new(maps.clone(), &library, &paths, window, cx));

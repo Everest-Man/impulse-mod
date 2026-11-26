@@ -260,6 +260,7 @@ map-hide-all = TOUT CACHER
 map-teleport = TÉLÉPORTER
 map-filter-teleport = AVEC TP
 map-teleport-here = TÉLÉPORTER ICI
+map-teleport-height = HAUTEUR DE TÉLÉPORTATION
 map-confirm = CONFIRMER
 map-delete = SUPPRIMER
 map-add-pin = NOUVEAU REPÈRE

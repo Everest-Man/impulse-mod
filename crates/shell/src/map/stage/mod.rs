@@ -314,7 +314,7 @@ impl Render for Stage {
         }
         self.bind_keys(stage.track_focus(&self.focus).key_context(STAGE), cx)
             .child(canvas)
-            .children(self.chip(&map, board, cx))
+            .children(self.chip(&map, board, window, cx))
             .children(self.target_menu(&map, board, cx))
             .child(self.readout(board, cx))
             .child(self.buttons(&map, board, cx))

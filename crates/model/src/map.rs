@@ -200,6 +200,12 @@ impl Frame {
     pub fn height(&self, position: [f64; 3]) -> f64 {
         position[self.axes[2]]
     }
+
+    /// `position`, `by` game units higher.
+    pub fn raised(&self, mut position: [f64; 3], by: f64) -> [f64; 3] {
+        position[self.axes[2]] += by;
+        position
+    }
 }
 
 #[cfg(test)]

@@ -242,6 +242,7 @@ map-hide-all = 全部隱藏
 map-teleport = 傳送
 map-filter-teleport = 傳送
 map-teleport-here = 傳送到這裡
+map-teleport-height = 傳送高度
 map-confirm = 確認
 map-delete = 刪除
 map-add-pin = 新增我的標記

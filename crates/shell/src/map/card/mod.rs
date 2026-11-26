@@ -8,8 +8,8 @@ mod pin;
 use std::{mem, path::PathBuf, sync::Arc};
 
 use gpui_kit::{
-    AnyElement, Bounds, ClickEvent, Context, Div, Entity, IntoElement, ObjectFit, Pixels, Render, RenderImage, SharedString, Stateful,
-    Subscription, Task, Window, canvas,
+    AnyElement, Bounds, ClickEvent, Context, Div, Entity, IntoElement, Pixels, Render, RenderImage, SharedString, Stateful, Subscription,
+    Task, Window, canvas,
     component::{
         h_flex,
         input::{InputState, TextareaState},
@@ -25,7 +25,7 @@ use super::{
     CARD_WIDTH, CONTROLS, MARGIN,
     board::{Board, BoardEvent},
     markers::Images,
-    picture::{ASPECT, fill, picture},
+    picture::{ASPECT, fill, picture, stand_in},
 };
 use crate::{
     Load,
@@ -187,20 +187,14 @@ impl Card {
     }
 
     /// The selected pin's clip or picture over the whole map; a click anywhere but the switch closes it.
-    fn lightbox(&self, map: &Map, board: &Board, cx: &Context<Self>) -> Option<AnyElement> {
+    fn lightbox(&mut self, map: &Map, board: &Board, window: &Window, cx: &Context<Self>) -> Option<AnyElement> {
         let index = board.selected.filter(|_| self.lightbox)?;
         let pin = &map.pins[index];
         let clip = self.clip.as_ref().map(|clip| clip.view.clone().into_any_element());
         // The preview is on disk already: it holds the place while the full size loads, or under the clip.
-        let under = pin.image.clone().map(|image| {
-            let preview = img(image.preview.clone());
-            let shown = match clip {
-                Some(_) => preview,
-                None => img(image.full)
-                    .with_loading(move || img(image.preview.clone()).size_full().object_fit(ObjectFit::Cover).into_any_element()),
-            };
-            fill(shown, ("pin-media", index))
-        });
+        let preview = pin.image.as_ref().map(|image| fill(img(image.preview.clone()), ("pin-media", index)));
+        let top = clip.or_else(|| pin.image.as_ref().map(|image| fill(img(image.full.clone()), ("pin-full", index))));
+        let under = stand_in(pin.group, map, board, &mut self.images, window, cx);
         let switch = pin.video.as_ref().zip(pin.image.as_ref()).map(|_| {
             let pick = |photo: bool| {
                 cx.listener(move |card: &mut Self, _: &ClickEvent, _: &mut Window, cx: &mut Context<Self>| {
@@ -230,7 +224,7 @@ impl Card {
             .justify_center()
             .bg(alpha(SUNKEN, 0.94))
             .cursor_pointer()
-            .child(picture(index, under.into_iter().chain(clip), self.lightbox_size()))
+            .child(picture(index, under, preview.into_iter().chain(top), self.lightbox_size()))
             .children(switch)
             .on_click(shut);
         Some(lightbox.into_any_element())
@@ -261,6 +255,6 @@ impl Render for Card {
         let root = div().relative().size_full().child(measure);
         let Load::Ready(map) = &board.map else { return root };
         let pin = self.pin_card(map, board, window, cx);
-        root.children(pin).children(self.mark_card(map, board, cx)).children(self.lightbox(map, board, cx))
+        root.children(pin).children(self.mark_card(map, board, cx)).children(self.lightbox(map, board, window, cx))
     }
 }

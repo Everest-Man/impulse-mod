@@ -265,6 +265,7 @@ map-hide-all = UKRYJ WSZYSTKO
 map-teleport = TELEPORTUJ
 map-filter-teleport = TELEPORT
 map-teleport-here = TELEPORTUJ TUTAJ
+map-teleport-height = WYSOKOŚĆ TELEPORTU
 map-confirm = POTWIERDŹ
 map-delete = USUŃ
 map-add-pin = DODAJ PINEZKĘ

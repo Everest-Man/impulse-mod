@@ -200,6 +200,13 @@ impl Trainers {
         cx.notify();
     }
 
+    /// The map's TELEPORT HEIGHT for the game, as kept (not a number is 0). Only the map shows it: no `TrainerEvent`.
+    pub fn set_teleport_lift(&mut self, game: &GameId, lift: f64) -> f64 {
+        let lift = if lift.is_finite() { lift } else { 0. };
+        self.profiles.edit_game(game, |profile| profile.teleport_lift = (lift != 0.).then_some(lift));
+        lift
+    }
+
     /// The game's own overlay mode, IN-GAME or not; `None`: the OVERLAY tab's.
     pub fn set_overlay_in_game(&mut self, game: &GameId, in_game: Option<bool>, cx: &mut Context<Self>) {
         self.profiles.edit_game(game, |profile| profile.overlay_in_game = in_game);

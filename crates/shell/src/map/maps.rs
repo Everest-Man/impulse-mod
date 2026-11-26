@@ -24,6 +24,7 @@ use crate::{
     library::{Library, LibraryEvent},
     run::{RunEvent, Runs},
     sources::{Sources, SourcesChanged},
+    trainer::Trainers,
     ui::text::{Texts, content_locale},
 };
 
@@ -43,6 +44,8 @@ pub struct Maps {
     registry: Arc<Registry>,
     library: Entity<Library>,
     runs: Entity<Runs>,
+    // The games' profiles: TELEPORT HEIGHT is the game's.
+    trainers: Entity<Trainers>,
     board: Entity<Board>,
     live_map: Entity<LiveMap>,
     titles: Entity<Titles>,
@@ -77,6 +80,7 @@ impl Maps {
         paths: &Paths,
         library: Entity<Library>,
         runs: Entity<Runs>,
+        trainers: Entity<Trainers>,
         sources: &Entity<Sources>,
         cx: &mut Context<Self>,
     ) -> Self {
@@ -105,6 +109,7 @@ impl Maps {
             registry,
             library,
             runs,
+            trainers,
             board,
             live_map,
             titles,
@@ -132,6 +137,13 @@ impl Maps {
 
     pub(super) fn titles(&self) -> &Entity<Titles> {
         &self.titles
+    }
+
+    /// TELEPORT HEIGHT for the open game: kept in its profile, and given to the board at once.
+    pub(super) fn set_lift(&mut self, lift: f64, cx: &mut Context<Self>) {
+        let Some(game) = &self.game else { return };
+        let lift = self.trainers.update(cx, |trainers, _| trainers.set_teleport_lift(game, lift));
+        self.board.update(cx, |board, cx| board.set_lift(lift, cx));
     }
 
     pub fn is_open(&self, cx: &App) -> bool {
@@ -234,6 +246,8 @@ impl Maps {
         let id = game.as_ref().map(|game| game.id.clone());
         let moved = self.game != id;
         if moved {
+            let lift = id.as_ref().and_then(|id| self.trainers.read(cx).game_profile(id).teleport_lift).unwrap_or(0.);
+            self.board.update(cx, |board, cx| board.set_lift(lift, cx));
             (self.game, self.asked, self._offers) = (id, None, Task::ready(()));
             self.discovered.clear();
         }

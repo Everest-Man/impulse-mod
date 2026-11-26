@@ -243,6 +243,7 @@ map-hide-all = HEPSİNİ GİZLE
 map-teleport = IŞINLAN
 map-filter-teleport = IŞINLANMA
 map-teleport-here = BURAYA IŞINLAN
+map-teleport-height = IŞINLANMA YÜKSEKLİĞİ
 map-confirm = ONAYLA
 map-delete = SİL
 map-add-pin = İŞARET EKLE
