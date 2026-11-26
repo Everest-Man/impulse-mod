@@ -161,12 +161,13 @@ impl Glance {
     /// visibility together: a mode switch at the same rect goes through. The window stays topmost until a frame of it
     /// reached the game.
     fn next(&mut self, cx: &mut App) -> Option<Call> {
+        let due = self.docks.read(cx).is_shown(&MINIMAP_DOCK) && self.live.read(cx).ready(cx);
         let game = match self.playing {
             Playing::Idle => {
                 self.close(cx);
                 return None;
             }
-            Playing::Front(game) if self.docks.read(cx).is_shown(&MINIMAP_DOCK) && self.live.read(cx).ready(cx) => Some(game),
+            Playing::Front(game) if due => Some(game),
             Playing::Front(_) | Playing::Away => None,
         };
         self.follow(game.is_some(), cx);
@@ -199,7 +200,10 @@ impl Glance {
         }
         let uncloak = matches!(was, Some((Mode::InGame, _))) && mode != Mode::InGame;
         let Some((mode, rect)) = now else {
-            window.update(cx, |card, window, cx| card.minimap.update(cx, |minimap, cx| minimap.hide(window, cx))).ok();
+            // Its few tiles stay while the minimap is due again (the overlay closing): drawn from scratch, it blinks.
+            if !(due && self.live.read(cx).placed()) {
+                window.update(cx, |card, window, cx| card.minimap.update(cx, |minimap, cx| minimap.hide(window, cx))).ok();
+            }
             return Some(Call::Hide { hwnd, uncloak });
         };
         Some(match mode {

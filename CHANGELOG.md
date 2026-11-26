@@ -14,6 +14,7 @@ The newest entry must match the version in `Cargo.toml`. A `-pre` build reads th
 
 ### Fixes
 
+- The HUD's minimap no longer blinks when the overlay closes: it comes up as the overlay goes, with its map, instead of after it, empty.
 - A map pin's picture or clip shows the pin's icon in its category's color while it loads, or when it cannot load, instead of a black box. The lightbox shows the small picture at once while the full size loads.
 
 ## [0.6.0] - 2026-11-25
