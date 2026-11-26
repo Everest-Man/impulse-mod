@@ -8,6 +8,7 @@ The newest entry must match the version in `Cargo.toml`. A `-pre` build reads th
 ### Features
 
 - A new install draws the overlay IN-GAME (Settings, OVERLAY, MODE), inside the game's picture where the game allows it, else over the game. An install that already has settings keeps its mode.
+- A pin's picture shows its mark on its category's color until it loads, or when it cannot.
 
 ### Fixes
 

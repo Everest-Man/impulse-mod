@@ -18,7 +18,7 @@ use crate::{
         board::Board,
         group, kind,
         markers::{ink, legible},
-        picture::{fill, picture},
+        picture::{fill, picture, stand_in},
     },
     ui::{
         assets::Icon,
@@ -67,6 +67,7 @@ impl Card {
         let clip = self.clip.as_ref().filter(|_| !self.lightbox).map(|clip| clip.view.clone().into_any_element());
         let preview = pin.image.as_ref().map(|image| fill(img(image.preview.clone()), ("pin-media", index)));
         let shown = (pin.image.is_some() || pin.video.is_some()).then(|| {
+            let under = stand_in(pin.group, map, board, &mut self.images, window, cx);
             div()
                 .id("pin-picture")
                 .relative()
@@ -74,7 +75,7 @@ impl Card {
                 .flex_none()
                 .cursor_pointer()
                 .bg(rgb(SUNKEN))
-                .child(picture(index, preview.into_iter().chain(clip), (CARD_WIDTH - 2., PICTURE)))
+                .child(picture(index, under, preview.into_iter().chain(clip), (CARD_WIDTH - 2., PICTURE)))
                 .on_click(cx.listener(|card, _, _, cx| {
                     (card.lightbox, card.photo) = (true, false);
                     cx.notify();
