@@ -1,7 +1,9 @@
 //! The shown map and what the user did with it, shared by the stage, the sidebar and the card.
 //! They observe it; it notifies on what a person does (clicks, typing, the player's position), never per frame.
 
-use std::{path::PathBuf, rc::Rc, time::Duration};
+mod teleport;
+
+use std::{mem, path::PathBuf, rc::Rc, time::Duration};
 
 use anyhow::Result;
 use client::map::{
@@ -65,8 +67,12 @@ pub struct Board {
     run: Option<Run>,
     pub player: Option<[f64; 3]>,
     pub bearing: Option<Bearing>,
+    // `player` is a current fix with its height: a pin can keep it.
+    pub here: bool,
     // What went wrong last, shown on the map.
     pub note: Option<Failure>,
+    // The open game's TELEPORT HEIGHT, which `Maps` keeps here.
+    lift: f64,
     // The player's position is asked for only while the map is on screen, this often.
     open: bool,
     every: Duration,
@@ -112,7 +118,9 @@ impl Board {
             run: None,
             player: None,
             bearing: None,
+            here: false,
             note: None,
+            lift: 0.,
             open: false,
             every,
             saves,
@@ -333,10 +341,18 @@ impl Board {
         open
     }
 
-    pub fn add_mark(&mut self, at: Point, cx: &mut Context<Self>) {
+    /// One of the user's pins where the player stands, which keeps the player's game position.
+    pub fn mark_player(&mut self, cx: &mut Context<Self>) {
+        let (Load::Ready(map), Some(player)) = (&self.map, self.player.filter(|_| self.here)) else { return };
+        let Some(at) = map.frame.as_ref().map(|frame| frame.to_map(player)) else { return };
+        self.add_mark(at, Some(player), cx);
+    }
+
+    pub fn add_mark(&mut self, at: Point, position: Option<[f64; 3]>, cx: &mut Context<Self>) {
         let saved = self.saved_mut();
         let count = saved.marks.len();
-        saved.marks.push(Mark { at: (at.x, at.y), name: String::new(), note: String::new(), color: PALETTE[count % PALETTE.len()] });
+        let color = PALETTE[count % PALETTE.len()];
+        saved.marks.push(Mark { at: (at.x, at.y), position, name: String::new(), note: String::new(), color });
         saved.marks_shown = true;
         self.select_mark(count, false, cx);
         self.save();
@@ -363,7 +379,7 @@ impl Board {
     pub fn set_run(&mut self, run: Option<Run>, cx: &mut Context<Self>) {
         self.run = run;
         if self.run.is_none() {
-            (self.player, self.bearing) = (None, None);
+            (self.player, self.bearing, self.here) = (None, None, false);
         }
         self.watch(cx);
         cx.notify();
@@ -421,58 +437,22 @@ impl Board {
 
     /// The last position stays, to teleport from at its height; the way is no longer known.
     fn lost(&mut self, cx: &mut Context<Self>) {
-        if self.bearing.take().is_some() {
+        let here = mem::take(&mut self.here);
+        if self.bearing.take().is_some() || here {
             cx.emit(BoardEvent::Moved);
         }
     }
 
-    /// Tells the stage only when the player or the bearing changed.
+    /// Tells the stage only when the player, the bearing or `here` changed.
     fn fixed(&mut self, fix: Fix, cx: &mut Context<Self>) {
-        if self.player == Some(fix.position) && self.bearing == fix.bearing {
+        if self.player == Some(fix.position) && self.bearing == fix.bearing && self.here == fix.height {
             return;
         }
         if self.player.replace(fix.position).is_none() {
             cx.notify();
         }
-        self.bearing = fix.bearing;
+        (self.bearing, self.here) = (fix.bearing, fix.height);
         cx.emit(BoardEvent::Moved);
-    }
-
-    pub fn can_teleport(&self, map: &Map) -> bool {
-        map.teleport && self.run.as_ref().is_some_and(|run| run.teleport)
-    }
-
-    /// Whether the player can be moved to a plane point: the height comes from where the player is.
-    pub fn can_teleport_to_plane(&self, map: &Map) -> bool {
-        self.player.is_some() && self.can_teleport(map)
-    }
-
-    /// Moves the player to `at` on the plane, at the height the player is at now.
-    pub fn teleport_to_plane(&mut self, at: Point, cx: &mut Context<Self>) {
-        let (Load::Ready(map), Some(player)) = (&self.map, self.player) else { return };
-        let Some(frame) = &map.frame else { return };
-        let to = frame.to_game(at, frame.height(player));
-        self.teleport(to, cx);
-    }
-
-    pub fn teleport(&mut self, to: [f64; 3], cx: &mut Context<Self>) {
-        let Some(run) = &self.run else { return };
-        let session = run.session.clone();
-        self.note = None;
-        cx.spawn(async move |board, cx| {
-            let moved = session.teleport(to).await;
-            if let Err(e) = &moved {
-                log::warn!("teleport: {e:#}");
-            }
-            board
-                .update(cx, |board, cx| {
-                    board.note = moved.err();
-                    cx.notify();
-                })
-                .ok();
-        })
-        .detach();
-        cx.notify();
     }
 }
 

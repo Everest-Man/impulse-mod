@@ -25,7 +25,7 @@ use crate::{
         key,
         text::{failed, t, text},
         theme::*,
-        widgets::{button, icon, list_row, mono, square},
+        widgets::{button, icon, list_row, mono, square, tip},
     },
 };
 
@@ -104,19 +104,27 @@ impl Stage {
         });
         let add = button(&t(cx, key::MAP_ADD_PIN))
             .id("map-add-mark")
-            .on_click(cx.listener(move |stage, _, _, cx| stage.board.update(cx, |board, cx| board.add_mark(target, cx))));
+            .on_click(cx.listener(move |stage, _, _, cx| stage.board.update(cx, |board, cx| board.add_mark(target, None, cx))));
         let menu = v_flex().occlude().absolute().left(px(x as f32)).top(px(y as f32)).gap(px(4.)).child(add).children(teleport);
         Some(menu.into_any_element())
     }
 
-    /// Bottom right: follow the player, zoom, layers.
+    /// Bottom right: follow the player, pin the player's position, zoom, layers.
     pub(super) fn buttons(&self, map: &Map, board: &Board, cx: &Context<Self>) -> impl IntoElement {
         let locate = board.player.filter(|_| map.frame.is_some()).map(|_| {
-            control("map-follow", Icon::Player, self.follow, cx).on_click(cx.listener(|stage, _, _, cx| {
+            let follow = control("map-follow", Icon::Player, self.follow, cx).on_click(cx.listener(|stage, _, _, cx| {
                 stage.follow ^= true;
                 stage.center_on_player();
                 cx.notify();
-            }))
+            }));
+            let hint = t(cx, key::MAP_PIN_POSITION);
+            let pin = board.here.then(|| {
+                control("map-pin-position", Icon::Pin, false, cx)
+                    .border_t_0()
+                    .tooltip(move |window, cx| tip(hint.clone(), window, cx))
+                    .on_click(cx.listener(|stage, _, _, cx| stage.board.update(cx, |board, cx| board.mark_player(cx))))
+            });
+            v_flex().child(follow).children(pin)
         });
         let zoom_in = control("map-zoom-in", Icon::Plus, false, cx).on_click(cx.listener(|stage, _, _, cx| stage.key_zoom(KEY_ZOOM, cx)));
         let zoom_out =

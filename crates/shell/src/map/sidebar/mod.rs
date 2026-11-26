@@ -2,6 +2,7 @@
 //! while something is typed, the places it finds. A view of its own: what moves on the map does not rebuild it.
 
 mod marks;
+mod teleport;
 
 use std::{collections::HashSet, rc::Rc, sync::Arc};
 
@@ -48,6 +49,7 @@ pub struct Sidebar {
     maps: Entity<Maps>,
     board: Entity<Board>,
     search: Entity<InputState>,
+    lift: Entity<InputState>,
     // The search's placeholder follows the language.
     _relabel: Subscription,
     folded: HashSet<usize>,
@@ -71,7 +73,11 @@ impl Sidebar {
             }
         })
         .detach();
-        cx.observe(&board, |_, _, cx| cx.notify()).detach();
+        cx.observe_in(&board, window, |sidebar, _, window, cx| {
+            sidebar.follow_lift(window, cx);
+            cx.notify();
+        })
+        .detach();
         cx.subscribe(&board, |sidebar, _, event: &BoardEvent, _| match event {
             BoardEvent::Installed { first, .. } => {
                 sidebar.stale.extend(sidebar.images.clear());
@@ -84,10 +90,12 @@ impl Sidebar {
             _ => {}
         })
         .detach();
+        let lift = teleport::lift_field(board.read(cx).lift(), window, cx);
         Self {
             maps,
             board,
             search,
+            lift,
             _relabel: relabel,
             folded: HashSet::new(),
             regions_open: false,
@@ -103,7 +111,7 @@ impl Sidebar {
     }
 
     pub fn has_focus(&self, window: &Window, cx: &App) -> bool {
-        self.search.focus_handle(cx).is_focused(window)
+        [&self.search, &self.lift].iter().any(|field| field.focus_handle(cx).is_focused(window))
     }
 
     pub fn hide(&mut self, window: &mut Window) {
@@ -122,6 +130,9 @@ impl Sidebar {
             rows.push(notice.child(text).into_any_element());
         }
         rows.push(quick_filters(map, board, cx).into_any_element());
+        if teleport::lift_shown(board) {
+            rows.push(self.lift_row(cx).into_any_element());
+        }
         rows.extend(self.marks_section(board, cx));
         rows.extend(self.regions(map, board, cx));
         for index in 0..map.categories.len() {

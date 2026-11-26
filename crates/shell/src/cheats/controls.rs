@@ -5,11 +5,10 @@ use client::{
     trainer::{Sheet, Span, TOP_TICK, settle},
 };
 use gpui_kit::{
-    AnyElement, App, Context, Div, Entity, IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ScrollEvent, SharedString, Stateful,
-    Window,
+    AnyElement, App, Context, Div, Entity, IntoElement, MouseButton, MouseMoveEvent, MouseUpEvent, ScrollEvent, Stateful, Window,
     component::{
         h_flex,
-        input::{Input, InputEvent, InputState},
+        input::{InputEvent, InputState},
     },
     div,
     prelude::*,
@@ -24,7 +23,7 @@ use crate::ui::{
     key,
     text::{t, tf},
     theme::*,
-    widgets::{button, flash_button, mono, switch, tip, toggle},
+    widgets::{button, flash_button, mono, number_field, switch, tip, toggle},
 };
 
 impl CheatList {
@@ -111,11 +110,13 @@ impl CheatList {
             Kind::Slider => h_flex()
                 .gap(px(6.))
                 .child(self.ticks(&printed.game, sheet, index, running, live, cx))
-                .when_some(printed.inputs.get(&index), |control, input| control.child(field(input, running, 60.).text_color(value_color)))
+                .when_some(printed.inputs.get(&index), |control, input| {
+                    control.child(number_field(input, 60., !running).text_color(value_color))
+                })
                 .into_any_element(),
             Kind::Number if cheat.args.button => h_flex()
                 .gap(px(8.))
-                .when_some(printed.inputs.get(&index), |control, input| control.child(field(input, running, 72.)))
+                .when_some(printed.inputs.get(&index), |control, input| control.child(number_field(input, 72., !running)))
                 .child(self.press(&printed.game, index, key::CHEATS_SET, key::CHEATS_SET_DONE, running, cx))
                 .into_any_element(),
             Kind::Number => {
@@ -134,7 +135,7 @@ impl CheatList {
                     .gap(px(8.))
                     .child(nudge("decrease", "−", -step))
                     .when_some(printed.inputs.get(&index), |control, input| {
-                        control.child(field(input, running, 72.).text_color(value_color))
+                        control.child(number_field(input, 72., !running).text_color(value_color))
                     })
                     .child(nudge("increase", "+", step))
                     .into_any_element()
@@ -298,14 +299,4 @@ fn field_value(input: &Entity<InputState>, cheat: &Cheat, now: f64, cx: &App) ->
         return Some(now);
     }
     text.parse().ok().and_then(|value| settle(cheat, value))
-}
-
-fn field(input: &Entity<InputState>, running: bool, width: f32) -> Div {
-    value_box("")
-        .w(px(width))
-        .child(Input::new(input).appearance(false).disabled(!running).px(px(8.)).text_center().font_family(MONO).text_size(px(TYPE_FIELD)))
-}
-
-fn value_box(value: impl Into<SharedString>) -> Div {
-    mono(value, TYPE_FIELD).h(px(26.)).flex().items_center().border_1().border_color(line(0.14)).bg(rgb(SUNKEN))
 }

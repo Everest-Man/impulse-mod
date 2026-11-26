@@ -22,6 +22,8 @@ const SLOWEST: Duration = Duration::from_secs(3);
 pub struct Fix {
     pub position: [f64; 3],
     pub bearing: Option<Bearing>,
+    /// The trainer told the height; else it is 0.
+    pub height: bool,
 }
 
 pub enum Tracked {
@@ -40,7 +42,8 @@ pub struct Tracker {
     // The plane the heading is worked out on.
     frame: Option<Frame>,
     heading: Heading,
-    last: Option<[f64; 3]>,
+    // The last position and whether its height was told.
+    last: Option<([f64; 3], bool)>,
     leases: Vec<Weak<Duration>>,
     asking: bool,
     failures: u32,
@@ -79,8 +82,8 @@ impl Tracker {
 
     /// The bearing as of now: it goes stale while no map asks.
     pub fn last(&self) -> Option<Fix> {
-        let position = self.last.filter(|_| self.failures < GIVE_UP)?;
-        Some(Fix { position, bearing: self.heading.bearing(Instant::now()) })
+        let (position, height) = self.last.filter(|_| self.failures < GIVE_UP)?;
+        Some(Fix { position, bearing: self.heading.bearing(Instant::now()), height })
     }
 
     /// The shortest wait a held lease wants.
@@ -112,14 +115,14 @@ impl Tracker {
             }
         };
         match fix {
-            Some(position) => {
+            Some((position, height)) => {
                 self.failures = 0;
                 let at = Instant::now();
                 if let Some(frame) = &self.frame {
                     self.heading.track(frame.to_map(position), at);
                 }
-                self.last = Some(position);
-                cx.emit(Tracked::Fix(Fix { position, bearing: self.heading.bearing(at) }));
+                self.last = Some((position, height));
+                cx.emit(Tracked::Fix(Fix { position, bearing: self.heading.bearing(at), height }));
                 every
             }
             None => {
@@ -135,11 +138,13 @@ impl Tracker {
     }
 }
 
-/// The plane's two axes must be numbers; a height the trainer does not tell is 0 (many trainers send none).
-fn placed(frame: Option<&Frame>, mut position: [f64; 3]) -> Option<[f64; 3]> {
-    let Some(frame) = frame else { return Some(position) };
+/// The plane's two axes must be numbers; a height the trainer does not tell is 0 (many trainers send none). With
+/// whether it was told.
+fn placed(frame: Option<&Frame>, mut position: [f64; 3]) -> Option<([f64; 3], bool)> {
+    let Some(frame) = frame else { return Some((position, position.iter().all(|axis| axis.is_finite()))) };
     let up = frame.axes[2];
-    if !position[up].is_finite() {
+    let told = position[up].is_finite();
+    if !told {
         position[up] = 0.;
     }
     let at = frame.to_map(position);
@@ -147,7 +152,7 @@ fn placed(frame: Option<&Frame>, mut position: [f64; 3]) -> Option<[f64; 3]> {
     if !on {
         log::debug!("player position off the map's axes");
     }
-    on.then_some(position)
+    on.then_some((position, told))
 }
 
 #[cfg(test)]
@@ -159,7 +164,8 @@ mod tests {
     #[test]
     fn a_missing_height_is_zero_and_a_missing_plane_axis_no_fix() {
         let frame = Frame { axes: [0, 2, 1], origin: Point { x: 0.5, y: 0.5 }, scale: (1e-4, -1e-4) };
-        assert_eq!(placed(Some(&frame), [1., f64::NAN, 2.]), Some([1., 0., 2.]));
+        assert_eq!(placed(Some(&frame), [1., f64::NAN, 2.]), Some(([1., 0., 2.], false)));
+        assert_eq!(placed(Some(&frame), [1., 5., 2.]), Some(([1., 5., 2.], true)));
         assert_eq!(placed(Some(&frame), [1., 3., f64::NAN]), None);
     }
 }
